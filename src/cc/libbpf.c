@@ -48,7 +48,7 @@
 
 #include "libbpf.h"
 #include "perf_reader.h"
-
+#include "perf_sample_config.h"
 // TODO: Remove this when CentOS 6 support is not needed anymore
 #include "setns.h"
 
@@ -1184,18 +1184,22 @@ int bpf_attach_kfunc(int prog_fd)
 
 void * bpf_open_perf_buffer(perf_reader_raw_cb raw_cb,
                             perf_reader_lost_cb lost_cb, void *cb_cookie,
-                            int pid, int cpu, int page_cnt) {
+                            int pid, int cpu, int page_cnt,
+                            unsigned int extra_flags) {
   int pfd;
   struct perf_event_attr attr = {};
   struct perf_reader *reader = NULL;
 
-  reader = perf_reader_new(raw_cb, lost_cb, cb_cookie, page_cnt);
+  reader = perf_reader_new(raw_cb, lost_cb, cb_cookie, page_cnt, extra_flags);
   if (!reader)
     goto error;
 
   attr.config = 10;//PERF_COUNT_SW_BPF_OUTPUT;
   attr.type = PERF_TYPE_SOFTWARE;
   attr.sample_type = PERF_SAMPLE_RAW;
+  if(extra_flags & SAMPLE_FLAGS_RAW_TIME) {
+    attr.sample_type |= PERF_SAMPLE_TIME;
+  }
   attr.sample_period = 1;
   attr.wakeup_events = 1;
   pfd = syscall(__NR_perf_event_open, &attr, pid, cpu, -1, PERF_FLAG_FD_CLOEXEC);

@@ -346,13 +346,15 @@ class BPFPerfBuffer : public BPFTableBase<int, int> {
   ~BPFPerfBuffer();
 
   StatusTuple open_all_cpu(perf_reader_raw_cb cb, perf_reader_lost_cb lost_cb,
-                           void* cb_cookie, int page_cnt);
+                           void* cb_cookie, int page_cnt,
+                           unsigned int extra_flags);
   StatusTuple close_all_cpu();
   int poll(int timeout_ms);
 
  private:
   StatusTuple open_on_cpu(perf_reader_raw_cb cb, perf_reader_lost_cb lost_cb,
-                          int cpu, void* cb_cookie, int page_cnt);
+                          int cpu, void* cb_cookie, int page_cnt,
+                          unsigned int extra_flags);
   StatusTuple close_on_cpu(int cpu);
 
   std::map<int, perf_reader*> cpu_readers_;

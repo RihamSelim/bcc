@@ -389,14 +389,14 @@ BPFPerfBuffer::BPFPerfBuffer(const TableDesc& desc)
                                 "' is not a perf buffer");
 }
 
-StatusTuple BPFPerfBuffer::open_on_cpu(perf_reader_raw_cb cb,
-                                       perf_reader_lost_cb lost_cb, int cpu,
-                                       void* cb_cookie, int page_cnt) {
+StatusTuple BPFPerfBuffer::open_on_cpu(perf_reader_raw_cb cb, perf_reader_lost_cb lost_cb,
+                                      int cpu, void* cb_cookie, int page_cnt,
+                                      unsigned int extra_flags) {
   if (cpu_readers_.find(cpu) != cpu_readers_.end())
     return StatusTuple(-1, "Perf buffer already open on CPU %d", cpu);
 
   auto reader = static_cast<perf_reader*>(
-      bpf_open_perf_buffer(cb, lost_cb, cb_cookie, -1, cpu, page_cnt));
+      bpf_open_perf_buffer(cb, lost_cb, cb_cookie, -1, cpu, page_cnt, extra_flags));
   if (reader == nullptr)
     return StatusTuple(-1, "Unable to construct perf reader");
 
@@ -420,9 +420,10 @@ StatusTuple BPFPerfBuffer::open_on_cpu(perf_reader_raw_cb cb,
   return StatusTuple::OK();
 }
 
-StatusTuple BPFPerfBuffer::open_all_cpu(perf_reader_raw_cb cb,
-                                        perf_reader_lost_cb lost_cb,
-                                        void* cb_cookie, int page_cnt) {
+StatusTuple BPFPerfBuffer::open_all_cpu(perf_reader_raw_cb cb, 
+                            perf_reader_lost_cb lost_cb,
+                            void* cb_cookie, int page_cnt,
+                            unsigned int extra_flags) {
   if (cpu_readers_.size() != 0 || epfd_ != -1)
     return StatusTuple(-1, "Previously opened perf buffer not cleaned");
 
@@ -431,7 +432,7 @@ StatusTuple BPFPerfBuffer::open_all_cpu(perf_reader_raw_cb cb,
   epfd_ = epoll_create1(EPOLL_CLOEXEC);
 
   for (int i : cpus) {
-    auto res = open_on_cpu(cb, lost_cb, i, cb_cookie, page_cnt);
+    auto res = open_on_cpu(cb, lost_cb, i, cb_cookie, page_cnt, extra_flags);
     if (res.code() != 0) {
       TRY2(close_all_cpu());
       return res;

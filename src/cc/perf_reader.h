@@ -27,7 +27,8 @@ struct perf_reader;
 
 struct perf_reader * perf_reader_new(perf_reader_raw_cb raw_cb,
                                      perf_reader_lost_cb lost_cb,
-                                     void *cb_cookie, int page_cnt);
+                                     void *cb_cookie, int page_cnt,
+                                     unsigned int extra_flags);
 void perf_reader_free(void *ptr);
 int perf_reader_mmap(struct perf_reader *reader);
 void perf_reader_event_read(struct perf_reader *reader);

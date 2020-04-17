@@ -28,6 +28,7 @@
 #include <linux/types.h>
 #include <linux/perf_event.h>
 
+#include "perf_sample_config.h"
 #include "libbpf.h"
 #include "perf_reader.h"
 
@@ -49,11 +50,13 @@ struct perf_reader {
   int page_size;
   int page_cnt;
   int fd;
+  unsigned int extra_flags;
 };
 
 struct perf_reader * perf_reader_new(perf_reader_raw_cb raw_cb,
                                      perf_reader_lost_cb lost_cb,
-                                     void *cb_cookie, int page_cnt) {
+                                     void *cb_cookie, int page_cnt, 
+                                     unsigned int extra_flags) {
   struct perf_reader *reader = calloc(1, sizeof(struct perf_reader));
   if (!reader)
     return NULL;
@@ -63,6 +66,7 @@ struct perf_reader * perf_reader_new(perf_reader_raw_cb raw_cb,
   reader->fd = -1;
   reader->page_size = getpagesize();
   reader->page_cnt = page_cnt;
+  reader->extra_flags = extra_flags;
   return reader;
 }
 
@@ -118,32 +122,55 @@ static void parse_sw(struct perf_reader *reader, void *data, int size) {
   uint8_t *ptr = data;
   struct perf_event_header *header = (void *)data;
 
-  struct {
-      uint32_t size;
-      char data[0];
-  } *raw = NULL;
-
   ptr += sizeof(*header);
   if (ptr > (uint8_t *)data + size) {
     fprintf(stderr, "%s: corrupt sample header\n", __FUNCTION__);
     return;
   }
 
-  raw = (void *)ptr;
-  ptr += sizeof(raw->size) + raw->size;
-  if (ptr > (uint8_t *)data + size) {
-    fprintf(stderr, "%s: corrupt raw sample\n", __FUNCTION__);
-    return;
-  }
+  if (reader->extra_flags & SAMPLE_FLAGS_USE_RAW_DATA) {
+    struct {
+        uint64_t time;
+        uint32_t size;
+        char data[0];
+    } *raw = NULL;
 
-  // sanity check
-  if (ptr != (uint8_t *)data + size) {
-    fprintf(stderr, "%s: extra data at end of sample\n", __FUNCTION__);
-    return;
-  }
+    raw = (void *)ptr;
+    
+    if (reader->raw_cb)
+      reader->raw_cb(reader->cb_cookie, raw, size);
+    // if (reader->raw_cb)
+    //   reader->raw_cb(reader->cb_cookie, (void*)ptr, size);
+  } else {
+    struct {
+      uint32_t size;
+      char data[0];
+    } *raw = NULL;
 
-  if (reader->raw_cb)
-    reader->raw_cb(reader->cb_cookie, raw->data, raw->size);
+    int offset = 0;
+
+    // skip sample time if it was collected
+    if (reader->extra_flags & SAMPLE_FLAGS_RAW_TIME) {
+      offset = sizeof(uint64_t);
+      ptr += offset;
+    }
+
+    raw = (void *)ptr;
+    ptr += sizeof(raw->size) + raw->size;
+    if (ptr > (uint8_t *)data + size + offset) {
+      fprintf(stderr, "%s: corrupt raw sample\n", __FUNCTION__);
+      return;
+    }
+
+    // sanity check
+    if (ptr != (uint8_t *)data + size) {
+      fprintf(stderr, "%s: extra data at end of sample\n", __FUNCTION__);
+      return;
+    }
+
+    if (reader->raw_cb)
+      reader->raw_cb(reader->cb_cookie, raw->data, raw->size);
+  }
 }
 
 static uint64_t read_data_head(volatile struct perf_event_mmap_page *perf_header) {
