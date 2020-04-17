@@ -10,6 +10,10 @@ option(INSTALL_CPP_EXAMPLES "Install C++ examples. Those binaries are statically
 add_executable(HelloWorld HelloWorld.cc)
 target_link_libraries(HelloWorld bcc-static)
 
+
+add_executable(SampleTime SampleTime.cc)
+target_link_libraries(SampleTime bcc-static)
+
 add_executable(CPUDistribution CPUDistribution.cc)
 target_link_libraries(CPUDistribution bcc-static)
 

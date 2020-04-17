@@ -102,7 +102,8 @@ bool bpf_has_kernel_btf(void);
 
 void * bpf_open_perf_buffer(perf_reader_raw_cb raw_cb,
                             perf_reader_lost_cb lost_cb, void *cb_cookie,
-                            int pid, int cpu, int page_cnt);
+                            int pid, int cpu, int page_cnt,
+							unsigned int extra_flags);
 
 /* attached a prog expressed by progfd to the device specified in dev_name */
 int bpf_attach_xdp(const char *dev_name, int progfd, uint32_t flags);
