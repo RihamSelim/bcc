@@ -60,7 +60,6 @@ def print_event(cpu, data, size):
     printb(b"%-18d %-18d %-16s %-6d %s" % (event.__raw_bpf_ts, event.ts, event.comm, event.pid,
     b"Hello, perf_output!"))
 flags = SAMPLE_FLAGS_USE_RAW_DATA | SAMPLE_FLAGS_RAW_TIME
-print(flags)
 # loop with callback to print_event
 b["events"].open_perf_buffer(print_event, flags=flags)
 while 1:
