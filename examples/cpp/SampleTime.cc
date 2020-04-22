@@ -3,7 +3,6 @@
  * Licensed under the Apache License, Version 2.0 (the "License")
  */
 
-#include <bcc/perf_sample_config.h>
 #include <signal.h>
 #include <unistd.h>
 #include <fstream>
@@ -11,6 +10,7 @@
 #include <string>
 
 #include "BPF.h"
+#include "perf_sample_config.h"
 
 const std::string BPF_PROGRAM = R"(
 #include <linux/sched.h>

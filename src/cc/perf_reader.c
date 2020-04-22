@@ -55,7 +55,7 @@ struct perf_reader {
 
 struct perf_reader * perf_reader_new(perf_reader_raw_cb raw_cb,
                                      perf_reader_lost_cb lost_cb,
-                                     void *cb_cookie, int page_cnt, 
+                                     void *cb_cookie, int page_cnt,
                                      unsigned int extra_flags) {
   struct perf_reader *reader = calloc(1, sizeof(struct perf_reader));
   if (!reader)
@@ -130,17 +130,16 @@ static void parse_sw(struct perf_reader *reader, void *data, int size) {
 
   if (reader->extra_flags & SAMPLE_FLAGS_USE_RAW_DATA) {
     struct {
-        uint64_t time;
-        uint32_t size;
-        char data[0];
+      uint64_t time;
+      uint32_t size;
+      char data[0];
     } *raw = NULL;
 
     raw = (void *)ptr;
-    
-    if (reader->raw_cb)
+
+    if (reader->raw_cb) {
       reader->raw_cb(reader->cb_cookie, raw, size);
-    // if (reader->raw_cb)
-    //   reader->raw_cb(reader->cb_cookie, (void*)ptr, size);
+    }
   } else {
     struct {
       uint32_t size;
@@ -149,7 +148,7 @@ static void parse_sw(struct perf_reader *reader, void *data, int size) {
 
     int offset = 0;
 
-    // skip sample time if it was collected
+    // skip sample time if it was collected but raw data was not requested
     if (reader->extra_flags & SAMPLE_FLAGS_RAW_TIME) {
       offset = sizeof(uint64_t);
       ptr += offset;

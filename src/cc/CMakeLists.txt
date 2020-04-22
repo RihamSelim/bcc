@@ -68,7 +68,7 @@ set(bcc_util_sources common.cc)
 set(bcc_sym_sources bcc_syms.cc bcc_elf.c bcc_perf_map.c bcc_proc.c)
 set(bcc_common_headers libbpf.h perf_reader.h)
 set(bcc_table_headers file_desc.h table_desc.h table_storage.h)
-set(bcc_api_headers bcc_common.h bpf_module.h bcc_exception.h bcc_syms.h bcc_proc.h bcc_elf.h)
+set(bcc_api_headers bcc_common.h bpf_module.h bcc_exception.h bcc_syms.h bcc_proc.h bcc_elf.h perf_sample_config.h)
 
 set(bcc_common_headers ${bcc_common_headers} perf_sample_config.h)
 
@@ -153,6 +153,5 @@ install(DIRECTORY ${libbpf_uapi} DESTINATION include/bcc/compat/linux FILES_MATC
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libbcc.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif(ENABLE_CLANG_JIT)
 install(FILES ${bcc_common_headers} DESTINATION include/bcc)
-install(FILES ${bcc_sample_headers} DESTINATION include/bcc)
 
 install(TARGETS bpf-shared LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# This is a Hello World example that uses BPF_PERF_OUTPUT.
+# This is a Hello World example that uses BPF_PERF_OUTPUT with Sample time collection enabled.
 
 from bcc import BPF
 from bcc.utils import printb
@@ -50,10 +50,10 @@ fields = [
 wrapper_class = type('', (ct.Structure,), {'_fields_': fields})
 
 def print_event(cpu, data, size):
-    
+
     wrapper_obj = ct.cast(data, ct.POINTER(wrapper_class)).contents
     data += ct.sizeof(ct.c_ulong) + ct.sizeof(ct.c_int)
-    
+
     event = b["events"].event(data)
 
     event.__raw_bpf_ts = wrapper_obj.__raw_bpf_ts
