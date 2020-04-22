@@ -396,7 +396,7 @@ StatusTuple BPFPerfBuffer::open_on_cpu(perf_reader_raw_cb cb, perf_reader_lost_c
     return StatusTuple(-1, "Perf buffer already open on CPU %d", cpu);
 
   auto reader = static_cast<perf_reader*>(
-      bpf_open_perf_buffer(cb, lost_cb, cb_cookie, -1, cpu, page_cnt, extra_flags));
+      bpf_open_perf_buffer_with_flags(cb, lost_cb, cb_cookie, -1, cpu, page_cnt, extra_flags));
   if (reader == nullptr)
     return StatusTuple(-1, "Unable to construct perf reader");
 
@@ -420,7 +420,7 @@ StatusTuple BPFPerfBuffer::open_on_cpu(perf_reader_raw_cb cb, perf_reader_lost_c
   return StatusTuple::OK();
 }
 
-StatusTuple BPFPerfBuffer::open_all_cpu(perf_reader_raw_cb cb, 
+StatusTuple BPFPerfBuffer::open_all_cpu(perf_reader_raw_cb cb,
                             perf_reader_lost_cb lost_cb,
                             void* cb_cookie, int page_cnt,
                             unsigned int extra_flags) {
