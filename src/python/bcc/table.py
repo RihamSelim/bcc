@@ -21,6 +21,8 @@ import os
 import errno
 import re
 import sys
+import inspect
+
 
 from .libbcc import lib, _RAW_CB_TYPE, _LOST_CB_TYPE
 from .perf import Perf
@@ -667,7 +669,7 @@ class PerfEventArray(ArrayBase):
             self._event_class = self._get_event_class()
         return ct.cast(data, ct.POINTER(self._event_class)).contents
 
-    def open_perf_buffer(self, callback, page_cnt=8, lost_cb=None, flags=0):
+    def open_perf_buffer(self, callback, page_cnt=8, lost_cb=None, flags=0, cb_cookie=None):
         """open_perf_buffers(callback)
 
         Opens a set of per-cpu ring buffer to receive custom perf event
@@ -681,19 +683,28 @@ class PerfEventArray(ArrayBase):
             raise Exception("Perf buffer page_cnt must be a power of two")
 
         for i in get_online_cpus():
-            self._open_perf_buffer(i, callback, page_cnt, lost_cb, flags)
+            self._open_perf_buffer(i, callback, page_cnt, lost_cb, flags, cb_cookie)
 
-    def _open_perf_buffer(self, cpu, callback, page_cnt, lost_cb, flags):
-        def raw_cb_(_, data, size):
+    def _open_perf_buffer(self, cpu, callback, page_cnt, lost_cb, flags, cb_cookie):
+        def raw_cb_(cb_cookie, data, size):
             try:
-                callback(cpu, data, size)
+                callback_args = inspect.getargspec(callback).args
+                if len(callback_args) == 4:
+                    callback(cpu, data, size, cb_cookie)
+                else:
+                    callback(cpu, data, size)
             except IOError as e:
                 if e.errno == errno.EPIPE:
                     exit()
                 else:
                     raise e
-        def lost_cb_(_, lost):
+        def lost_cb_(cb_cookie, lost):
             try:
+                callback_args = inspect.getargspec(callback).args
+                if len(callback_args) == 2:
+                    lost_cb(cb_cookie, lost)
+                else:
+                    lost_cb(lost)
                 lost_cb(lost)
             except IOError as e:
                 if e.errno == errno.EPIPE:
@@ -702,7 +713,7 @@ class PerfEventArray(ArrayBase):
                     raise e
         fn = _RAW_CB_TYPE(raw_cb_)
         lost_fn = _LOST_CB_TYPE(lost_cb_) if lost_cb else ct.cast(None, _LOST_CB_TYPE)
-        reader = lib.bpf_open_perf_buffer_with_flags(fn, lost_fn, None, -1, cpu, page_cnt, flags)
+        reader = lib.bpf_open_perf_buffer_with_flags(fn, lost_fn, cb_cookie, -1, cpu, page_cnt, flags)
         if not reader:
             raise Exception("Could not open perf buffer")
         fd = lib.perf_reader_fd(reader)

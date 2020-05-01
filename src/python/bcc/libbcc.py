@@ -90,8 +90,8 @@ lib.bpf_attach_socket.argtypes = [ct.c_int, ct.c_int]
 lib.bcc_func_load.restype = ct.c_int
 lib.bcc_func_load.argtypes = [ct.c_void_p, ct.c_int, ct.c_char_p, ct.c_void_p,
         ct.c_size_t, ct.c_char_p, ct.c_uint, ct.c_int, ct.c_char_p, ct.c_uint, ct.c_char_p]
-_RAW_CB_TYPE = ct.CFUNCTYPE(None, ct.py_object, ct.c_void_p, ct.c_int)
-_LOST_CB_TYPE = ct.CFUNCTYPE(None, ct.py_object, ct.c_ulonglong)
+_RAW_CB_TYPE = ct.CFUNCTYPE(ct.py_object, ct.py_object, ct.c_void_p, ct.c_int)
+_LOST_CB_TYPE = ct.CFUNCTYPE(ct.py_object, ct.py_object, ct.c_ulonglong)
 lib.bpf_attach_kprobe.restype = ct.c_int
 lib.bpf_attach_kprobe.argtypes = [ct.c_int, ct.c_int, ct.c_char_p, ct.c_char_p,
         ct.c_ulonglong, ct.c_int]
