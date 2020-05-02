@@ -703,7 +703,7 @@ class PerfEventArray(ArrayBase):
                 else:
                     raise e
         def lost_cb_(cb_cookie, lost):
-            lost_args = [a for a in inspect.getargspec(callback).args if a not in arg_keywords]
+            lost_args = [a for a in inspect.getargspec(lost).args if a not in arg_keywords]
             open_lost_cb_with_cookie = len(lost_args) > 1
 
             try:
