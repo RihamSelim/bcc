@@ -71,6 +71,7 @@ map_type_name = {BPF_MAP_TYPE_HASH: "HASH",
 stars_max = 40
 log2_index_max = 65
 linear_index_max = 1025
+arg_keywords = ["self", "cls"]
 
 # helper functions, consider moving these to a utils module
 def _stars(val, val_max, width):
@@ -686,10 +687,13 @@ class PerfEventArray(ArrayBase):
             self._open_perf_buffer(i, callback, page_cnt, lost_cb, flags, cb_cookie)
 
     def _open_perf_buffer(self, cpu, callback, page_cnt, lost_cb, flags, cb_cookie):
+        # Hack since Python2 does not support signature(foo).parameters['args'].kind
+        args = [a for a in inspect.getargspec(callback).args if a not in arg_keywords]
+        open_cb_with_cookie = len(args) > 3
+
         def raw_cb_(cb_cookie, data, size):
             try:
-                callback_args = inspect.getargspec(callback).args
-                if len(callback_args) == 4:
+                if open_cb_with_cookie:
                     callback(cpu, data, size, cb_cookie)
                 else:
                     callback(cpu, data, size)
@@ -699,13 +703,15 @@ class PerfEventArray(ArrayBase):
                 else:
                     raise e
         def lost_cb_(cb_cookie, lost):
+            lost_args = [a for a in inspect.getargspec(callback).args if a not in arg_keywords]
+            open_lost_cb_with_cookie = len(lost_args) > 1
+
             try:
                 callback_args = inspect.getargspec(callback).args
-                if len(callback_args) == 2:
+                if open_lost_cb_with_cookie:
                     lost_cb(cb_cookie, lost)
                 else:
                     lost_cb(lost)
-                lost_cb(lost)
             except IOError as e:
                 if e.errno == errno.EPIPE:
                     exit()
