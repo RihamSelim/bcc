@@ -128,47 +128,35 @@ static void parse_sw(struct perf_reader *reader, void *data, int size) {
     return;
   }
 
-  if (reader->extra_flags & SAMPLE_FLAGS_USE_RAW_DATA) {
-    struct {
-      uint64_t time;
-      uint32_t size;
-      char data[0];
-    } *raw = NULL;
+  // skip over sample time if it was collected (for sanity check)
+  if (reader->extra_flags & SAMPLE_FLAGS_RAW_TIME) {
+    ptr += sizeof(uint64_t);
+  }
 
-    raw = (void *)ptr;
+  // sanity check raw data
+  struct {
+    uint32_t size;
+    char data[0];
+  } *raw = (void *)ptr;
 
-    if (reader->raw_cb) {
-      reader->raw_cb(reader->cb_cookie, raw, size);
-    }
-  } else {
-    struct {
-      uint32_t size;
-      char data[0];
-    } *raw = NULL;
+  ptr += sizeof(raw->size) + raw->size;
+  if (ptr > (uint8_t *)data + size) {
+    fprintf(stderr, "%s: corrupt raw sample\n", __FUNCTION__);
+    return;
+  }
 
-    int offset = 0;
+  if (ptr != (uint8_t *)data + size) {
+    fprintf(stderr, "%s: extra data at end of sample\n", __FUNCTION__);
+    return;
+  }
 
-    // skip sample time if it was collected but raw data was not requested
-    if (reader->extra_flags & SAMPLE_FLAGS_RAW_TIME) {
-      offset = sizeof(uint64_t);
-      ptr += offset;
-    }
-
-    raw = (void *)ptr;
-    ptr += sizeof(raw->size) + raw->size;
-    if (ptr > (uint8_t *)data + size + offset) {
-      fprintf(stderr, "%s: corrupt raw sample\n", __FUNCTION__);
-      return;
-    }
-
-    // sanity check
-    if (ptr != (uint8_t *)data + size) {
-      fprintf(stderr, "%s: extra data at end of sample\n", __FUNCTION__);
-      return;
-    }
-
-    if (reader->raw_cb)
+  if (reader->raw_cb) {
+    if (reader->extra_flags & SAMPLE_FLAGS_USE_RAW_DATA) {
+      ptr = (void *)data; // callback will consume perf data directly (everything after header)
+      reader->raw_cb(reader->cb_cookie, ptr + sizeof(*header), size - sizeof(*header));
+    } else {
       reader->raw_cb(reader->cb_cookie, raw->data, raw->size);
+    }
   }
 }
 
